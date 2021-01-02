@@ -156,10 +156,10 @@ func SendPing(destProcessId int, myProcessId int) {
 	toSend <- msg
 }
 
-//Send via multicast a start election message
+//Send via multicast a start probeEcho message
 func SendStartElection(processId int, aptitude int) {
 	if trace {
-		fmt.Println("[Network] Sending start-election message to " + multicastAddr)
+		fmt.Println("[Network] Sending start-probeEcho message to " + multicastAddr)
 	}
 	rs := []rune{rune(processId), rune(aptitude)}
 

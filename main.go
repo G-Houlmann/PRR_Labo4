@@ -80,7 +80,7 @@ func main() {
 	go networking.ListenMulticast(topology.MultiCastAddr, consumeMulticast)
 	go networking.ListenUnicast(strconv.Itoa(myPort), myAddress, consumeUnicast)
 
-	//start the election algorithm
+	//start the probeEcho algorithm
 	go election.RunBullyAlgorithm(myId, nbProcesses, startApt, MaxTransmissionDuration)
 	election.Election <- struct{}{}
 
@@ -164,10 +164,10 @@ func consumeMulticast(reader *bytes.Reader) {
 	}
 
 	if trace {
-		fmt.Println("[Network] Received start-election message")
+		fmt.Println("[Network] Received start-probeEcho message")
 	}
 
-	//Request to start an election
+	//Request to start an probeEcho
 	msg := election.BullyMessage{
 		Emitter:  int(processId),
 		Aptitude: int(aptitude),
@@ -186,13 +186,13 @@ func waitForPong(processId int) {
 
 	case <-timeout: //timed out
 		if trace {
-			fmt.Println("[Network] Pong waiting timed out, starting election...")
+			fmt.Println("[Network] Pong waiting timed out, starting probeEcho...")
 		}
 		election.Election <- struct{}{}
 	}
 }
 
-//Send a ping to the election winner periodically
+//Send a ping to the probeEcho winner periodically
 func periodicPings(processId int) {
 	for {
 		time.Sleep(3 * time.Second)
