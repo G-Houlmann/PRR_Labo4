@@ -39,13 +39,13 @@ var primeDivisor int
 var trace = false
 
 type ProbeMessage struct {
-	CalculationId int //the last 3 digits of CalculationId are the id of the original requester
+	CalculationId int //the last 3 digits of CalculationId are the process id of the original requester
 	Parent        int
 	Candidate     int
 }
 
 type EchoMessage struct {
-	CalculationId int //the last 3 digits of CalculationId are the id of the original requester
+	CalculationId int //the last 3 digits of CalculationId are the process id of the original requester
 	MayBePrime    bool
 }
 
@@ -65,9 +65,6 @@ var Probe = make(chan ProbeMessage)
 
 // Channel to receive a new Echo message
 var Echo = make(chan EchoMessage)
-
-//// Channel to forward messages from the network
-//var Message = make(chan CalculationMessage)
 
 func Trace() {
 	trace = true

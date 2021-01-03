@@ -41,6 +41,7 @@ func main() {
 	nbProcesses := topology.ClientCount
 
 	me = myId
+	max := topology.Clients[nbProcesses-1].PrimeDivisor * topology.Clients[nbProcesses-1].PrimeDivisor
 
 	//Set the options if they are in the config.json file
 	if topology.Debug {
@@ -63,6 +64,7 @@ func main() {
 	if trace {
 		fmt.Println("process ID = " + strconv.Itoa(me))
 		fmt.Println("prime divisor = " + strconv.Itoa(primeDivisor))
+		fmt.Println("maximum input = " + strconv.Itoa(max))
 	}
 
 	//Start the network-related goroutines
@@ -76,13 +78,12 @@ func main() {
 	go probeEcho.Run(me, len(neighbors), neighbors, primeDivisor)
 
 	// Prompt and wait for calculation requests
-	mainloop()
+	mainloop(max)
 
 }
 
 // Wait for commands from the user
-func mainloop() {
-	//TODO gérer si on entre un nombre trop haut pour le nombre de processus
+func mainloop(max int) {
 	promptForNewCalculationRequest()
 	var command string
 
@@ -97,10 +98,13 @@ func mainloop() {
 		if err != nil {
 			fmt.Println("Please input an integer")
 		} else {
-			probeEcho.InitNewCalculation <- candidate
-			promptForNewCalculationRequest()
+			if candidate > max {
+				fmt.Println("Error: The input must be lower than " + strconv.Itoa(max))
+			} else {
+				probeEcho.InitNewCalculation <- candidate
+				promptForNewCalculationRequest()
+			}
 		}
-
 	}
 }
 
@@ -126,18 +130,12 @@ func consumeUnicast(payload []byte) {
 	}
 
 	if message.IsProbe {
-		if trace {
-			fmt.Println("Received a probe message")
-		}
 		probeEcho.Probe <- probeEcho.ProbeMessage{
 			CalculationId: message.CalculationId,
 			Parent:        message.Emitter,
 			Candidate:     message.Candidate,
 		}
 	} else {
-		if trace {
-			fmt.Println("Received an echo message")
-		}
 		probeEcho.Echo <- probeEcho.EchoMessage{
 			CalculationId: message.CalculationId,
 			MayBePrime:    message.MayBePrime,

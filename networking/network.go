@@ -75,7 +75,7 @@ func StartSending() {
 		}
 
 		if debug {
-			time.Sleep(3 * time.Second)
+			time.Sleep(5 * time.Second)
 		}
 		_, err = conn.WriteTo(msgToSend.Content, destAddress)
 		if err != nil {
