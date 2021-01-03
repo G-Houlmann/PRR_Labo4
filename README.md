@@ -15,28 +15,36 @@ When filling in the configuration file, please pay attention to the following:
 
 
 # Test scenario
-Use the `config.json` file given. In this file, process 1 has an aptitude of 5 and processes 1 and 2 have an aptitude of 15.  
+Use the `config.json` file given, and execute the following steps. Make sure you have the `trace` and `debug` options set to `true` in the configuration file.  
 
-- Start process 0
-    - It should start an election and win it
-- Immediatly Start process 1
-    - It should start an election and win it
-- Start process 2
-    - It should start an election, but process 1 will win it because its id is lower
-- Stop the process 1
-    - An election should soon start on processes 0 and 2 (started by either of them), won by process 2
-- Using the console, set the aptitude of process 0 to 50 (by typing `50` in the console and hitting `Enter`)
-    - It should start an election and win it
-- Stop all processes
+- Start all the processes
+- In process 0, type in `1`
+- Immediatly in process 0 again, type `7`
+- In process 1, type `3`
+- In process 2, type `49`
+- In process 3, type `27`
+- In process 3 again, type `18`
+- In process 1, type `50`
+    - You should get an error at this point, telling you that the number must be lower than 49
+- In process 1 again, type `-5`
+    - You should get an error at this point, telling you that the number must be positive
+- In process 1 again, type `5.2`
+    - You should get an error at this point, telling you that the number must be an integer
+- In process 1 again, type `hello`
+    - You should get an error at this point, telling you that the number must be an integer
 
+After all these steps wait a few seconds and all your requests should have received a result. The results must be as follows in the next section.
 
 ### Expected results: 
-Note that the amount and position of the ping and pong-related messages may differ according to your timing.  
+Note that the exact order of the messages may differ according to your timing. The most important are the result messages, telling you if a number is prime or not.  
 Process 0:  
-<img src="images/pr0.PNG">  
+<img src="images/pr0.png">  
 
 Process 1:  
-<img src="images/pr1.PNG">  
+<img src="images/pr1.png">  
 
 Process 2:  
-<img src="images/pr2.PNG">  
+<img src="images/pr2.png">  
+
+Process 3:  
+<img src="images/pr3.png"> 

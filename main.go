@@ -108,7 +108,10 @@ func mainloop(max int) {
 		} else {
 			if candidate > max {
 				fmt.Println("Error: The input must be lower than " + strconv.Itoa(max))
-			} else {
+			} else
+			if candidate < 0{
+				fmt.Println("Error: The input must be a positive integer")
+			}else {
 				probeEcho.InitNewCalculation <- candidate
 				promptForNewCalculationRequest()
 			}
