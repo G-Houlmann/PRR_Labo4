@@ -10,7 +10,7 @@ Note: You can build your own binary with go build in the root directory of the r
 ## Configuration instructions  
 When filling in the configuration file, please pay attention to the following: 
 - The process IDs must all be lower than 1000, because of an identification specification. This specification can be changed by updating a constant in the code.
-- The prime divisor attached to a process must be a prime number. All the prime number from 2 to the _Nth_ one (n being the amount of clients in the configuration file). If you skip one, the program will not work correctly.
+- The prime divisor attached to a process must be a prime number. All the prime numbers from 2 to the _nth_ one (_n_ being the amount of clients in the configuration file). If you skip one, the program will not work correctly.
 
 
 
@@ -36,7 +36,7 @@ Use the `config.json` file given, and execute the following steps. Make sure you
 After all these steps wait a few seconds and all your requests should have received a result. The results must be as follows in the next section.
 
 ### Expected results: 
-Note that the exact order of the messages may differ according to your timing. The most important are the result messages, telling you if a number is prime or not.  
+Note that the exact order of the messages may differ according to your timing. The most importants are the result messages, telling you if a number is prime or not.  
 Process 0:  
 <img src="images/pr0.png">  
 
