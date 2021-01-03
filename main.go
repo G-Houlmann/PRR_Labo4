@@ -1,8 +1,8 @@
 package main
 
 import (
-	"PRR_labo3/election"
-	"PRR_labo3/networking"
+	"PRR_Labo4/networking"
+	"PRR_Labo4/probeEcho"
 	"bufio"
 	"bytes"
 	"fmt"
@@ -58,7 +58,7 @@ func main() {
 	}
 	if topology.Trace {
 		networking.Trace()
-		election.Trace()
+		probeEcho.Trace()
 		trace = true
 	}
 
@@ -76,8 +76,7 @@ func main() {
 	}
 
 	//Start the network-related goroutines
-	go networking.Send()
-	go networking.ListenMulticast(topology.MultiCastAddr, consumeMulticast)
+	go networking.StartSending()
 	go networking.ListenUnicast(strconv.Itoa(myPort), myAddress, consumeUnicast)
 
 	//start the probeEcho algorithm
@@ -192,7 +191,7 @@ func waitForPong(processId int) {
 	}
 }
 
-//Send a ping to the probeEcho winner periodically
+//StartSending a ping to the probeEcho winner periodically
 func periodicPings(processId int) {
 	for {
 		time.Sleep(3 * time.Second)

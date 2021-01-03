@@ -2,8 +2,8 @@ package networking
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"golang.org/x/net/ipv4"
 	"log"
 	"net"
 	"time"
@@ -11,15 +11,20 @@ import (
 
 var addresses []string
 var myConnection net.UDPAddr
-var multicastAddr string
 var debug = false
 var trace = false
 
 type MessageToSend struct {
-	SenderProcessId int
-	Content         []byte
-	Receiver        int
-	DestAddr        string
+	Content  []byte
+	DestAddr string
+}
+
+type CalculationMessage struct {
+	IsProbe       bool `json:"isProbe"` //true = probe, false = echo
+	CalculationId int  `json:"calculationId"`
+	Emitter       int  `json:"emitter"`   //zero if the message is not a probe
+	Candidate     int  `json:"candidate"` //Empty if the message is not a probe
+	MayBePrime    bool `json:"mayBePrime"`
 }
 
 var toSend = make(chan MessageToSend)
@@ -34,42 +39,6 @@ func Debug() {
 
 func Trace() {
 	trace = true
-}
-
-//Listen on UDP multicast
-func ListenMulticast(Addr string, consume func(reader *bytes.Reader)) {
-	multicastAddr = Addr
-
-	addr, err := net.ResolveUDPAddr("udp", Addr)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	conn, err := net.ListenPacket("udp", Addr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
-	p := ipv4.NewPacketConn(conn)
-	err = p.JoinGroup(nil, addr)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	buffsize := 128
-	buffer := make([]byte, buffsize)
-	reader := bytes.NewReader(buffer)
-
-	for {
-		_, _, err := conn.ReadFrom(buffer)
-		if err != nil {
-			log.Fatal(err)
-		}
-		go consume(reader)
-
-		reader.Reset(buffer)
-	}
 }
 
 //Listen on UDP multicast
@@ -98,13 +67,12 @@ func ListenUnicast(localPort string, localAddress string, consume func(reader *b
 	}
 }
 
-//Send a message via udp
-func Send() {
+//continuously send the messages received through the toSend channel
+func StartSending() {
 	conn, _ := net.ListenUDP("udp", &myConnection)
 	defer conn.Close()
 	for {
 		msgToSend := <-toSend
-		//if trace {fmt.Println("[Network] Sending udp to " + msgToSend.DestAddr)}
 		destAddress, err := net.ResolveUDPAddr("udp", msgToSend.DestAddr)
 		if err != nil {
 			log.Fatal(err)
@@ -120,53 +88,27 @@ func Send() {
 	}
 }
 
-//Send a pong message
-func SendPong(destProcessId int, myProcessId int) {
+//Send a message through the network
+func SendMesage(destProcessId int, message CalculationMessage) {
 	destAddr := addresses[destProcessId]
 	if trace {
-		fmt.Println("[Network] Sending pong to " + destAddr)
+		var messageType string
+		if message.IsProbe {
+			messageType = "probe"
+		} else {
+			messageType = "echo"
+		}
+		fmt.Println("[Network] Sending " + messageType + " message to " + destAddr)
 	}
-	rs := []rune{2, rune(myProcessId)}
+
+	p, err := json.Marshal(message)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	msg := MessageToSend{
-		SenderProcessId: myProcessId,
-		Content:         []byte(string(rs)),
-		Receiver:        destProcessId,
-		DestAddr:        destAddr,
-	}
-
-	toSend <- msg
-}
-
-//Send a ping message
-func SendPing(destProcessId int, myProcessId int) {
-	destAddr := addresses[destProcessId]
-	if trace {
-		fmt.Println("[Network] Sending ping to " + destAddr)
-	}
-	rs := []rune{1, rune(myProcessId)}
-
-	msg := MessageToSend{
-		SenderProcessId: myProcessId,
-		Content:         []byte(string(rs)),
-		Receiver:        destProcessId,
-		DestAddr:        destAddr,
-	}
-
-	toSend <- msg
-}
-
-//Send via multicast a start probeEcho message
-func SendStartElection(processId int, aptitude int) {
-	if trace {
-		fmt.Println("[Network] Sending start-probeEcho message to " + multicastAddr)
-	}
-	rs := []rune{rune(processId), rune(aptitude)}
-
-	msg := MessageToSend{
-		SenderProcessId: processId,
-		Content:         []byte(string(rs)),
-		DestAddr:        multicastAddr,
+		Content:  p,
+		DestAddr: destAddr,
 	}
 
 	toSend <- msg
