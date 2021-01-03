@@ -225,5 +225,15 @@ func newCalculation(candidate int) {
 }
 
 func canBePrime(candidate int, divisor int) bool {
-	return (candidate%divisor) != 0 || candidate == divisor
+	result := (candidate%divisor) != 0 || candidate == divisor
+	if trace {
+		var resultTxt string
+		if result{
+			resultTxt = "Remainder is not zero."
+		}else{
+			resultTxt = "Remainder is zero."
+		}
+		fmt.Println("[ProbeEcho] Tried to divide " + strconv.Itoa(candidate) + " by " + strconv.Itoa(divisor) + ". " + resultTxt)
+	}
+	return result
 }
