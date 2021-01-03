@@ -4,7 +4,6 @@ import (
 	"PRR_Labo4/networking"
 	"PRR_Labo4/probeEcho"
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -61,6 +60,11 @@ func main() {
 	}
 	networking.SetAddresses(addresses)
 
+	if trace {
+		fmt.Println("process ID = " + strconv.Itoa(me))
+		fmt.Println("prime divisor = " + strconv.Itoa(primeDivisor))
+	}
+
 	//Start the network-related goroutines
 	go networking.StartSending()
 	go networking.ListenUnicast(strconv.Itoa(myPort), myAddress, consumeUnicast)
@@ -69,7 +73,7 @@ func main() {
 	go listenForResult()
 
 	//start the probeEcho algorithm
-	go probeEcho.Run(me, nbProcesses, neighbors, primeDivisor)
+	go probeEcho.Run(me, len(neighbors), neighbors, primeDivisor)
 
 	// Prompt and wait for calculation requests
 	mainloop()
@@ -112,28 +116,28 @@ func listenForResult() {
 }
 
 //Consume a message read from the unicast
-func consumeUnicast(reader *bytes.Reader) {
-
-	r := bufio.NewReaderSize(reader, 1024)
-	received, err := r.ReadString('\n')
-	if err != nil {
-		log.Fatal(err)
-	}
+func consumeUnicast(payload []byte) {
 
 	message := networking.CalculationMessage{}
 
-	err = json.Unmarshal([]byte(received), &message)
+	err := json.Unmarshal(payload, &message)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if message.IsProbe {
+		if trace {
+			fmt.Println("Received a probe message")
+		}
 		probeEcho.Probe <- probeEcho.ProbeMessage{
 			CalculationId: message.CalculationId,
 			Parent:        message.Emitter,
 			Candidate:     message.Candidate,
 		}
 	} else {
+		if trace {
+			fmt.Println("Received an echo message")
+		}
 		probeEcho.Echo <- probeEcho.EchoMessage{
 			CalculationId: message.CalculationId,
 			MayBePrime:    message.MayBePrime,

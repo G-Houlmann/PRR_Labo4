@@ -13,8 +13,8 @@ const NB_PROCESS_ID_DIGITS = 3
 // My id
 var me int
 
-// Id of my parent node
-var parent int
+// Maps a calculation's unique id with my parent for this calculation
+var parent = make(map[int]int)
 
 // Amount of neighbors for this node
 var nbNeighbors int
@@ -95,7 +95,8 @@ func handleProbeMessage(message ProbeMessage) {
 	_, found := expectedMessages[message.CalculationId]
 	if found {
 		if trace {
-			fmt.Println("[ProbeEcho] Received probe for an already existing calculation")
+			fmt.Println("[ProbeEcho] Received probe for an already existing calculation: CalculationId = " + strconv.Itoa(message.CalculationId) + ", Parent = " +
+				strconv.Itoa(message.Parent) + ", Candidate = " + strconv.Itoa(message.Candidate))
 		}
 
 		handleEchoMessage(EchoMessage{
@@ -105,10 +106,13 @@ func handleProbeMessage(message ProbeMessage) {
 
 	} else {
 		if trace {
-			fmt.Println("[ProbeEcho] Received probe for a new calculation")
+			fmt.Println("[ProbeEcho] Received probe for a new calculation: CalculationId = " + strconv.Itoa(message.CalculationId) + ", Parent = " +
+				strconv.Itoa(message.Parent) + ", Candidate = " + strconv.Itoa(message.Candidate))
 		}
 
-		mayBePrime := (message.Candidate % primeDivisor) == 0
+		parent[message.CalculationId] = message.Parent
+
+		mayBePrime := (message.Candidate % primeDivisor) != 0
 
 		if nbNeighbors > 1 {
 			expectedMessages[message.CalculationId] = nbNeighbors - 1
@@ -123,8 +127,8 @@ func handleProbeMessage(message ProbeMessage) {
 
 			//Forwarding the probes to the children
 			for _, n := range neighbors {
-				if n != parent {
-					networking.SendMesage(n, probeMessage)
+				if n != message.Parent {
+					networking.SendMessage(n, probeMessage)
 				}
 			}
 
@@ -134,13 +138,18 @@ func handleProbeMessage(message ProbeMessage) {
 				CalculationId: message.CalculationId,
 				MayBePrime:    mayBePrime,
 			}
-			networking.SendMesage(parent, echoMessage)
+			networking.SendMessage(message.Parent, echoMessage)
 		}
 
 	}
 }
 
 func handleEchoMessage(message EchoMessage) {
+
+	if trace {
+		fmt.Println("[ProbeEcho] Received an echo message: CalculationId = " + strconv.Itoa(message.CalculationId) + ", MayBePrime = " + strconv.FormatBool(message.MayBePrime))
+	}
+
 	//update the amount of expected messages and the possibility of the candidate being prime
 	expectedMessages[message.CalculationId]--
 	canStillBePrime[message.CalculationId] = canStillBePrime[message.CalculationId] && message.MayBePrime
@@ -154,7 +163,7 @@ func handleEchoMessage(message EchoMessage) {
 		if messageOriginalProcessId == me {
 			CalculationResult <- Result{
 				Candidate: myRunningCalculations[message.CalculationId],
-				IsPrime:   false,
+				IsPrime:   canStillBePrime[message.CalculationId],
 			}
 			//If I am not the original sender of the calculation request, send an echo to the parent
 		} else {
@@ -163,13 +172,13 @@ func handleEchoMessage(message EchoMessage) {
 				CalculationId: message.CalculationId,
 				MayBePrime:    canStillBePrime[message.CalculationId],
 			}
-			networking.SendMesage(parent, echoMessage)
+			networking.SendMessage(parent[message.CalculationId], echoMessage)
 		}
 
 		//clean up the map entries
 		delete(expectedMessages, message.CalculationId)
 		delete(canStillBePrime, message.CalculationId)
-
+		delete(parent, message.CalculationId)
 	}
 }
 
@@ -206,6 +215,6 @@ func newCalculation(candidate int) {
 		Candidate:     candidate,
 	}
 	for _, n := range neighbors {
-		networking.SendMesage(n, probeMessage)
+		networking.SendMessage(n, probeMessage)
 	}
 }

@@ -1,7 +1,6 @@
 package networking
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -42,7 +41,7 @@ func Trace() {
 }
 
 //Listen on UDP multicast
-func ListenUnicast(localPort string, localAddress string, consume func(reader *bytes.Reader)) {
+func ListenUnicast(localPort string, localAddress string, consume func(payload []byte)) {
 	conn, err := net.ListenPacket("udp", localAddress+":"+localPort)
 	if err != nil {
 		log.Fatal(err)
@@ -59,11 +58,8 @@ func ListenUnicast(localPort string, localAddress string, consume func(reader *b
 			log.Fatal(err)
 		}
 
-		buffer := bytes.NewBuffer(inputBytes[:length])
-		reader := bytes.NewReader(buffer.Bytes())
-		go consume(reader)
+		go consume(inputBytes[:length])
 
-		reader.Reset(inputBytes)
 	}
 }
 
@@ -89,7 +85,7 @@ func StartSending() {
 }
 
 //Send a message through the network
-func SendMesage(destProcessId int, message CalculationMessage) {
+func SendMessage(destProcessId int, message CalculationMessage) {
 	destAddr := addresses[destProcessId]
 	if trace {
 		var messageType string
