@@ -23,13 +23,13 @@ var nbNeighbors int
 var neighbors []int
 
 // Maps a calculation's unique id with the amount of probe/echos yet te be received for this message
-var expectedMessages map[int]int
+var expectedMessages = make(map[int]int)
 
 // Maps a calculation's unique id with the current possibility of it being prime. Built using the received echos
-var canStillBePrime map[int]bool
+var canStillBePrime = make(map[int]bool)
 
 // Maps the calculations that I started myself with the candidate of this calculation
-var myRunningCalculations map[int]int
+var myRunningCalculations = make(map[int]int)
 
 var localCalculationCurrentId = 0
 

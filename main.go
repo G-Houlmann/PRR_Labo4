@@ -5,16 +5,14 @@ import (
 	"PRR_Labo4/probeEcho"
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
-var pingChannels []chan struct{}
-var MaxTransmissionDuration time.Duration
 var me int
 var debug = false
 var trace = false
@@ -39,22 +37,16 @@ func main() {
 	myId, _ := strconv.Atoi(arguments[1])
 	myPort := topology.Clients[myId].Port
 	myAddress := topology.Clients[myId].Hostname
+	primeDivisor := topology.Clients[myId].PrimeDivisor
+	neighbors := topology.Clients[myId].Neighbors
 	nbProcesses := topology.ClientCount
-	startApt := topology.Clients[myId].Apt
 
-	MaxTransmissionDuration = time.Millisecond * time.Duration(topology.MaxTD)
 	me = myId
-
-	//if Id is too high for the amount of processes, exit
-	if myId >= nbProcesses {
-		return
-	}
 
 	//Set the options if they are in the config.json file
 	if topology.Debug {
 		networking.Debug()
 		debug = true
-		MaxTransmissionDuration += 3 * time.Second
 	}
 	if topology.Trace {
 		networking.Trace()
@@ -69,31 +61,25 @@ func main() {
 	}
 	networking.SetAddresses(addresses)
 
-	//init ping handling channels
-	pingChannels = make([]chan struct{}, nbProcesses)
-	for i := 0; i < nbProcesses; i++ {
-		pingChannels[i] = make(chan struct{})
-	}
-
 	//Start the network-related goroutines
 	go networking.StartSending()
 	go networking.ListenUnicast(strconv.Itoa(myPort), myAddress, consumeUnicast)
 
+	//start listening for results
+	go listenForResult()
+
 	//start the probeEcho algorithm
-	go election.RunBullyAlgorithm(myId, nbProcesses, startApt, MaxTransmissionDuration)
-	election.Election <- struct{}{}
+	go probeEcho.Run(me, nbProcesses, neighbors, primeDivisor)
 
-	//ping the current elect process periodically
-	go periodicPings(myId)
-
-	// Prompt and wait for manual aptitude updates
+	// Prompt and wait for calculation requests
 	mainloop()
 
 }
 
 // Wait for commands from the user
 func mainloop() {
-	promptForNewAptitude()
+	//TODO gérer si on entre un nombre trop haut pour le nombre de processus
+	promptForNewCalculationRequest()
 	var command string
 
 	for {
@@ -103,112 +89,58 @@ func mainloop() {
 		//parse the command
 		command, _ = reader.ReadString('\n')
 		msg := strings.TrimSpace(command)
-		newApt, err := strconv.Atoi(msg)
+		candidate, err := strconv.Atoi(msg)
 		if err != nil {
-			fmt.Println("Please input a number")
+			fmt.Println("Please input an integer")
 		} else {
-			election.SetAptitude <- newApt
-			fmt.Println("Aptitude set to " + msg)
-			promptForNewAptitude()
+			probeEcho.InitNewCalculation <- candidate
+			promptForNewCalculationRequest()
 		}
 
 	}
 }
 
-func promptForNewAptitude() {
-	fmt.Println("Type a new aptitude to change it : ")
+func listenForResult() {
+	for {
+		result := <-probeEcho.CalculationResult
+		if result.IsPrime {
+			fmt.Println(strconv.Itoa(result.Candidate) + " is a prime number!")
+		} else {
+			fmt.Println(strconv.Itoa(result.Candidate) + " is not a prime number...")
+		}
+	}
 }
 
 //Consume a message read from the unicast
 func consumeUnicast(reader *bytes.Reader) {
-	//msgType: 1 = PING, 2 = PONG
-	msgType, _, err := reader.ReadRune()
+
+	r := bufio.NewReaderSize(reader, 1024)
+	received, err := r.ReadString('\n')
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	processId, _, err := reader.ReadRune()
+	message := networking.CalculationMessage{}
+
+	err = json.Unmarshal([]byte(received), &message)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	//interpret the message
-	switch msgType {
-	case 1: //ping
-		fmt.Println("[Network] received ping")
-		networking.SendPong(int(processId), me)
-	case 2: //pong
-		fmt.Println("[Network] received pong")
-		pingChannels[processId] <- struct{}{}
-	default:
-		log.Fatal("Unknown message type")
+	if message.IsProbe {
+		probeEcho.Probe <- probeEcho.ProbeMessage{
+			CalculationId: message.CalculationId,
+			Parent:        message.Emitter,
+			Candidate:     message.Candidate,
+		}
+	} else {
+		probeEcho.Echo <- probeEcho.EchoMessage{
+			CalculationId: message.CalculationId,
+			MayBePrime:    message.MayBePrime,
+		}
 	}
 }
 
-//Consume a message read from the multicast
-func consumeMulticast(reader *bytes.Reader) {
-	processId, _, err := reader.ReadRune()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//Ignore if the message comes from myself
-	if int(processId) == me {
-		return
-	}
-
-	aptitude, _, err := reader.ReadRune()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if trace {
-		fmt.Println("[Network] Received start-probeEcho message")
-	}
-
-	//Request to start an probeEcho
-	msg := election.BullyMessage{
-		Emitter:  int(processId),
-		Aptitude: int(aptitude),
-	}
-	election.Message <- msg
-}
-
-//Wait for a pong message after sending a ping
-func waitForPong(processId int) {
-	if trace {
-		fmt.Println("[Network] Waiting for pong...")
-	}
-	timeout := time.After(2 * MaxTransmissionDuration)
-	select {
-	case <-pingChannels[processId]: //received a pong in time
-
-	case <-timeout: //timed out
-		if trace {
-			fmt.Println("[Network] Pong waiting timed out, starting probeEcho...")
-		}
-		election.Election <- struct{}{}
-	}
-}
-
-//StartSending a ping to the probeEcho winner periodically
-func periodicPings(processId int) {
-	for {
-		time.Sleep(3 * time.Second)
-
-		if debug {
-			time.Sleep(10 * time.Second)
-		}
-
-		//Get the current elected process
-		election.RequestChosen <- struct{}{}
-		chosen := <-election.GetChosen
-		if processId == chosen {
-			continue
-		}
-
-		networking.SendPing(chosen, processId)
-		go waitForPong(chosen)
-	}
-
+func promptForNewCalculationRequest() {
+	fmt.Println("Type an integer to find out whether it is prime : ")
 }
