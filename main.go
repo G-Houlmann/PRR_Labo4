@@ -12,8 +12,10 @@ import (
 	"strings"
 )
 
+//My process id
 var me int
-var debug = false
+
+//Display debugging logs during the program's execution
 var trace = false
 
 func main() {
@@ -54,7 +56,6 @@ func main() {
 	//Set the options if they are in the config.json file
 	if topology.Debug {
 		networking.Debug()
-		debug = true
 	}
 	if topology.Trace {
 		networking.Trace()
@@ -108,10 +109,9 @@ func mainloop(max int) {
 		} else {
 			if candidate > max {
 				fmt.Println("Error: The input must be lower than " + strconv.Itoa(max))
-			} else
-			if candidate < 0{
+			} else if candidate < 0 {
 				fmt.Println("Error: The input must be a positive integer")
-			}else {
+			} else {
 				probeEcho.InitNewCalculation <- candidate
 				promptForNewCalculationRequest()
 			}
@@ -119,6 +119,7 @@ func mainloop(max int) {
 	}
 }
 
+//Listen for a result for one of my requests
 func listenForResult() {
 	for {
 		result := <-probeEcho.CalculationResult

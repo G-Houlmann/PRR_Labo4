@@ -8,16 +8,26 @@ import (
 	"time"
 )
 
+//addresses of the other processes. Need to be initialized with SetAddresses.
 var addresses []string
+
+//local UDP address
 var myConnection net.UDPAddr
+
+//Wait a few seconds between sending message
 var debug = false
+
+//Display debugging logs during the program's execution
 var trace = false
 
+//Struct to communicate a message to be sent through the network
 type MessageToSend struct {
 	Content  []byte
 	DestAddr string
 }
 
+//Single struct transmitted through the network for this program.
+//It has the fields for either a probe message or an echo message, and a boolean to identify it's type.
 type CalculationMessage struct {
 	IsProbe       bool `json:"isProbe"` //true = probe, false = echo
 	CalculationId int  `json:"calculationId"`
@@ -28,6 +38,7 @@ type CalculationMessage struct {
 
 var toSend = make(chan MessageToSend)
 
+//Set the addresses of the other processes
 func SetAddresses(newAddresses []string) {
 	addresses = newAddresses
 }
@@ -97,6 +108,7 @@ func SendMessage(destProcessId int, message CalculationMessage) {
 		fmt.Println("[Network] Sending " + messageType + " message to " + destAddr)
 	}
 
+	//Encode the payload to json
 	p, err := json.Marshal(message)
 	if err != nil {
 		log.Fatal(err)

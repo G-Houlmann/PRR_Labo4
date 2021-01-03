@@ -8,6 +8,7 @@ import (
 	"strconv"
 )
 
+//Amount of digits used for the process ID at the end of a calculation ID
 const NB_PROCESS_ID_DIGITS = 3
 
 // My id
@@ -31,19 +32,23 @@ var canStillBePrime = make(map[int]bool)
 // Maps the calculations that I started myself with the candidate of this calculation
 var myRunningCalculations = make(map[int]int)
 
+//Counter used to generate a unique ID for requests coming from this process
 var localCalculationCurrentId = 0
 
+//Prime divisor of this process
 var primeDivisor int
 
 // Display some logs
 var trace = false
 
+//Contains the data of a probe message
 type ProbeMessage struct {
 	CalculationId int //the last 3 digits of CalculationId are the process id of the original requester
 	Parent        int
 	Candidate     int
 }
 
+//Contains the data of an echo message
 type EchoMessage struct {
 	CalculationId int //the last 3 digits of CalculationId are the process id of the original requester
 	MayBePrime    bool
@@ -58,6 +63,7 @@ type Result struct {
 // Channel to request a new calculation
 var InitNewCalculation = make(chan int)
 
+//Used to communicate calculation results to the user interface
 var CalculationResult = make(chan Result)
 
 // Channel to receive a new Probe message
@@ -70,6 +76,7 @@ func Trace() {
 	trace = true
 }
 
+//Starts the algorithm, waiting for messages and requests
 func Run(processId int, nNeighbors int, neighborsArray []int, divisor int) {
 	me = processId
 	nbNeighbors = nNeighbors
