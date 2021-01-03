@@ -109,7 +109,8 @@ func handleProbeMessage(message ProbeMessage) {
 
 		parent[message.CalculationId] = message.Parent
 
-		mayBePrime := (message.Candidate % primeDivisor) != 0
+		//Determine whether the candidate can be prime using our local prime divisor
+		mayBePrime := canBePrime(message.Candidate, primeDivisor)
 
 		if nbNeighbors > 1 {
 			expectedMessages[message.CalculationId] = nbNeighbors - 1
@@ -192,7 +193,7 @@ func newCalculation(candidate int) {
 	localCalculationCurrentId++
 
 	//If we can already find out that the candidate is not prime with our own divisor, directly return the result
-	if candidate%primeDivisor == 0 {
+	if !canBePrime(candidate, primeDivisor) {
 		CalculationResult <- Result{
 			Candidate: candidate,
 			IsPrime:   false,
@@ -214,4 +215,8 @@ func newCalculation(candidate int) {
 	for _, n := range neighbors {
 		networking.SendMessage(n, probeMessage)
 	}
+}
+
+func canBePrime(candidate int, divisor int) bool {
+	return (candidate%divisor) != 0 || candidate == divisor
 }
