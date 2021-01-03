@@ -41,7 +41,15 @@ func main() {
 	nbProcesses := topology.ClientCount
 
 	me = myId
-	max := topology.Clients[nbProcesses-1].PrimeDivisor * topology.Clients[nbProcesses-1].PrimeDivisor
+
+	//calculate the maximal candidate processable by the program
+	max := 0
+	for _, c := range topology.Clients {
+		if c.PrimeDivisor > max {
+			max = c.PrimeDivisor
+		}
+	}
+	max *= max
 
 	//Set the options if they are in the config.json file
 	if topology.Debug {

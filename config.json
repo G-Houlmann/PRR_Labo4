@@ -1,6 +1,6 @@
 {
   "debug": false,
-  "trace": false,
+  "trace": true,
   "clientCount": 4,
   "clients": [
     {
