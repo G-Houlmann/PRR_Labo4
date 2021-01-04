@@ -206,6 +206,13 @@ func newCalculation(candidate int) {
 			IsPrime:   false,
 		}
 		return
+		//If we can already find out that the candidate is prime because it is equal to our own divisor, directly return the result
+	} else if candidate == primeDivisor {
+		CalculationResult <- Result{
+			Candidate: candidate,
+			IsPrime:   true,
+		}
+		return
 	}
 
 	myRunningCalculations[id] = candidate
@@ -228,9 +235,14 @@ func canBePrime(candidate int, divisor int) bool {
 	result := (candidate%divisor) != 0 || candidate == divisor
 	if trace {
 		var resultTxt string
-		if result{
-			resultTxt = "Remainder is not zero."
-		}else{
+		if result {
+			if candidate == divisor {
+				resultTxt = "Candidate is equal to the prime divisor, so it is prime"
+			} else {
+				resultTxt = "Remainder is not zero."
+			}
+
+		} else {
 			resultTxt = "Remainder is zero."
 		}
 		fmt.Println("[ProbeEcho] Tried to divide " + strconv.Itoa(candidate) + " by " + strconv.Itoa(divisor) + ". " + resultTxt)

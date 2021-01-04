@@ -38,20 +38,14 @@ func main() {
 	myId, _ := strconv.Atoi(arguments[1])
 	myPort := topology.Clients[myId].Port
 	myAddress := topology.Clients[myId].Hostname
-	primeDivisor := topology.Clients[myId].PrimeDivisor
+	primeDivisor := topology.PrimeDivisors[myId]
 	neighbors := topology.Clients[myId].Neighbors
 	nbProcesses := topology.ClientCount
 
 	me = myId
 
 	//calculate the maximal candidate processable by the program
-	max := 0
-	for _, c := range topology.Clients {
-		if c.PrimeDivisor > max {
-			max = c.PrimeDivisor
-		}
-	}
-	max *= max
+	max := topology.PrimeDivisors[nbProcesses-1] * topology.PrimeDivisors[nbProcesses-1]
 
 	//Set the options if they are in the config.json file
 	if topology.Debug {

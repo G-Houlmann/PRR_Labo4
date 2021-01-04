@@ -8,18 +8,18 @@ import (
 )
 
 type Topology struct {
-	Debug       bool     `json:"debug"`
-	Trace       bool     `json:"trace"`
-	ClientCount int      `json:"clientCount"`
-	Clients     []Client `json:"clients"`
+	Debug         bool     `json:"debug"`
+	Trace         bool     `json:"trace"`
+	ClientCount   int      `json:"clientCount"`
+	Clients       []Client `json:"clients"`
+	PrimeDivisors []int    `json:"primeDivisors"`
 }
 
 type Client struct {
-	Id           int    `json:"id"`
-	Hostname     string `json:"hostname"`
-	Port         int    `json:"port"`
-	PrimeDivisor int    `json:"primeDivisor"`
-	Neighbors    []int  `json:"neighbors"`
+	Id        int    `json:"id"`
+	Hostname  string `json:"hostname"`
+	Port      int    `json:"port"`
+	Neighbors []int  `json:"neighbors"`
 }
 
 //Parse the config.json file in a Topology struct
@@ -40,7 +40,6 @@ func Parse(path string) (*Topology, error) {
 
 	err = json.Unmarshal(byteValue, &topology)
 	if err != nil {
-		//fmt.Println(err)
 		return nil, err
 	}
 

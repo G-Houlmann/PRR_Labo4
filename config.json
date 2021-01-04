@@ -2,31 +2,28 @@
   "debug": true,
   "trace": true,
   "clientCount": 4,
+  "primeDivisors": [2, 3, 5, 7],
   "clients": [
     {
       "id": 0,
-      "primeDivisor": 2,
       "neighbors": [1, 2, 3],
       "hostname": "127.0.0.1",
       "port": 6000
     },
     {
       "id": 1,
-      "primeDivisor": 3,
       "neighbors": [0, 3],
       "hostname": "127.0.0.1",
       "port": 6001
     },
     {
       "id": 2,
-      "primeDivisor": 5,
       "neighbors": [0, 3],
       "hostname": "127.0.0.1",
       "port": 6002
     },
     {
       "id": 3,
-      "primeDivisor": 7,
       "neighbors": [0, 1, 2],
       "hostname": "127.0.0.1",
       "port": 6003
