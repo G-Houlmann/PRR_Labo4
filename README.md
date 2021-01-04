@@ -10,7 +10,7 @@ Note: You can build your own binary with go build in the root directory of the r
 ## Configuration instructions  
 When filling in the configuration file, please pay attention to the following: 
 - The process IDs must all be lower than 1000, because of an identification specification. This specification can be changed by updating a constant in the code.
-- The prime divisor attached to a process must be a prime number. All the prime numbers from 2 to the _nth_ one (_n_ being the amount of clients in the configuration file). If you skip one, the program will not work correctly.
+- In the `primeDivisors` array, please give at least as many prime numbers (ascending from 2, without missing any) as the number of clients you have declared. For example, if you have 5 clients, write `[2, 3, 5, 7, 11]`.
 
 
 
