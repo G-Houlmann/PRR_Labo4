@@ -23,7 +23,7 @@ Use the `config.json` file given, and execute the following steps. Make sure you
 - In process 1, type `3`
 - In process 2, type `49`
 - In process 3, type `27`
-- In process 3 again, type `18`
+- In process 3 again, type `19`
 - In process 1, type `50`
     - You should get an error at this point, telling you that the number must be lower than 49
 - In process 1 again, type `-5`
